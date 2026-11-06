@@ -1,0 +1,6 @@
+[
+  {"Numero_da_Ocorrencia":"1001","Classificacao_da_Ocorrência":"Incidente","Data_da_Ocorrencia":"2024-05-13","Municipio":"SÃO PAULO","UF":"SP","Regiao":"Sudeste","Nome_do_Fabricante":"Fabricante A"},
+  {"Numero_da_Ocorrencia":"1002","Classificacao_da_Ocorrência":"Acidente","Data_da_Ocorrencia":"2024-06-18","Municipio":"BELO HORIZONTE","UF":"MG","Regiao":"Sudeste","Nome_do_Fabricante":"Fabricante B"},
+  {"Numero_da_Ocorrencia":"1003","Classificacao_da_Ocorrência":"Incidente grave","Data_da_Ocorrencia":"2024-07-11","Municipio":"CURITIBA","UF":"PR","Regiao":"Sul","Nome_do_Fabricante":"Fabricante C"},
+  {"Numero_da_Ocorrencia":"1002","Classificacao_da_Ocorrência":"Acidente","Data_da_Ocorrencia":"2024-06-18","Municipio":"BELO HORIZONTE","UF":"MG","Regiao":"Sudeste","Nome_do_Fabricante":"Fabricante B (revisão)"}
+]
