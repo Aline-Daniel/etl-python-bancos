@@ -1,0 +1,19 @@
+name: Testes Python - ETL
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  testar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verificar sintaxe Python
+        run: python -m compileall -q etl.py tests/
+      - name: Executar testes do ETL com SQLite
+        run: python -m unittest discover -s tests -v
