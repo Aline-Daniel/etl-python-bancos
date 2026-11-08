@@ -62,7 +62,22 @@ def ler_arquivo(arquivo: Path) -> list[dict[str, Any]]:
         return rows
     if arquivo.suffix.lower() == '.csv':
         with arquivo.open(encoding='utf-8-sig', newline='') as file:
-            return list(csv.DictReader(file))
+            amostra = file.read(4096)
+            file.seek(0)
+            try:
+                separador = csv.Sniffer().sniff(amostra, delimiters=',;').delimiter
+            except csv.Error:
+                separador = ';' if amostra.splitlines() and amostra.splitlines()[0].count(';') > amostra.splitlines()[0].count(',') else ','
+            reader = csv.DictReader(file, delimiter=separador)
+            if not reader.fieldnames:
+                raise ValueError('CSV vazio ou sem cabeçalho.')
+            reader.fieldnames = [name.strip() for name in reader.fieldnames]
+            if len(reader.fieldnames) != len(set(reader.fieldnames)):
+                raise ValueError('CSV contém colunas duplicadas.')
+            for campo_obrigatorio in ('numero_ocorrencia', 'data_ocorrencia', 'uf'):
+                if not any(alias in reader.fieldnames for alias in KEYS[campo_obrigatorio]):
+                    raise ValueError(f'CSV sem coluna obrigatória: {campo_obrigatorio}.')
+            return list(reader)
     raise ValueError('Formato não suportado. Use .json ou .csv.')
 
 
@@ -77,6 +92,9 @@ def campo(linha: dict[str, Any], nomes: tuple[str, ...]) -> str:
 def normalizar(linha: dict[str, Any]) -> dict[str, str]:
     if not isinstance(linha, dict):
         raise ValueError('Registro não é objeto.')
+    # DictReader usa chave None para valores excedentes e valor None para colunas ausentes.
+    if None in linha or any(valor is None for valor in linha.values()):
+        raise ValueError('Linha CSV com quantidade incorreta de colunas.')
     d = {k:campo(linha, names) for k, names in KEYS.items()}
     number = d['numero_ocorrencia']
     if not number or len(number) > 64:
@@ -127,10 +145,10 @@ def gravar_remoto(registros: list[dict[str, str]], url: str, modo: str) -> int:
     except ImportError as exc:
         raise RuntimeError('Instale sqlalchemy e o driver de seu banco antes de usar conexão remota.') from exc
     engine = create_engine(url, pool_pre_ping=True)
-    dialect = engine.dialect.name
-    if dialect not in ('postgresql','mysql'):
-        raise ValueError('Só PostgreSQL e MySQL são aceitos como destino remoto.')
     try:
+        dialect = engine.dialect.name
+        if dialect not in ('postgresql', 'mysql'):
+            raise ValueError('Só PostgreSQL e MySQL são aceitos como destino remoto.')
         with engine.begin() as conn:
             conn.execute(text(CREATE_SQL))
             if modo == 'completa':
@@ -150,6 +168,11 @@ def executar(arquivo: Path, database: Path, modo: str = 'incremental', database_
     # Proteção: nunca apagar tabela se o arquivo não tiver registros válidos.
     if not registros:
         raise ValueError('Nenhum registro válido. Nada foi alterado no banco.')
+    if modo == 'completa' and resumo['invalidos']:
+        raise ValueError(
+            f"Carga completa cancelada: {resumo['invalidos']} registro(s) inválido(s). "
+            "Corrija a origem antes de substituir a tabela."
+        )
     total = gravar_remoto(registros, database_url, modo) if database_url else gravar_sqlite(registros, database, modo)
     return {**resumo, 'modo': modo, 'registros_no_banco': total, 'data_execucao': datetime.now().isoformat(timespec='seconds')}
 
