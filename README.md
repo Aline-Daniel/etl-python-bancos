@@ -18,7 +18,7 @@ Resultado: `dados/ocorrencias.db` e `dados/ultimo_relatorio.json`. Os dados de e
 python etl.py --origem "C:\caminho\V_OCORRENCIA_AMPLA.json" --modo incremental
 ```
 
-`--modo completa` substitui a tabela pelo conteúdo **válido** do arquivo; use esse modo apenas com backup e confirmação. `incremental` não apaga registros antigos: insere novos e atualiza IDs existentes.
+`--modo completa` substitui a tabela apenas quando **todos os registros têm validação aprovada** (IDs repetidos são consolidados). Se houver registros inválidos, o sistema cancela a operação **antes de apagar qualquer dado**. Faça backup antes de executar esse modo. `incremental` não apaga registros antigos: insere novos e atualiza IDs existentes, ignorando registros inválidos.
 
 ## PostgreSQL ou MySQL (opcionais)
 
@@ -41,7 +41,8 @@ Para MySQL: `mysql+pymysql://USUARIO:SENHA@localhost:3306/banco_teste`.
 
 ## Validação
 
-- CSV UTF-8 ou JSON em formato de lista de objetos;
+- CSV UTF-8/UTF-8 com BOM, com separador **vírgula ou ponto e vírgula** (incluindo exportação do Excel), ou JSON em formato de lista de objetos;
+- CSV com cabeçalho duplicado, colunas essenciais ausentes ou linhas com quantidade errada de valores recebe validação específica;
 - ocorrência precisa de número, data ISO (`AAAA-MM-DD`) e UF com duas letras;
 - repetidos no mesmo arquivo: prevalece o último registro válido;
 - carga realizada em transação (sem substituição parcial em caso de erro);
